@@ -1,7 +1,25 @@
 const express = require('express')
 const app = express()
+const morgan = require('morgan')
 
 app.use(express.json())
+
+// Morgan middleware
+// Log all requests to console
+
+morgan.token('namee', function (req,res) {
+  return req.body['name']
+})
+
+morgan.token('number', function (req,res) {
+  return req.body['number']
+})
+
+app.use(morgan(':method :url { :namee , :number }', {
+  skip: function (req,res) { return false} 
+}))
+
+
 
 // Hardcoded list of data
 let persons = [
@@ -91,7 +109,7 @@ app.post('/api/persons', (request, response) => {
     })
   }
 
-  if(persons.filter(person => person.name !== body.name).length > 0) {
+  if(persons.filter(person => person.name === body.name).length > 0) {
     return response.status(400).json({
       error: 'name must be unique'
     })
