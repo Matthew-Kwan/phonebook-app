@@ -1,8 +1,10 @@
 const express = require('express')
 const app = express()
 const morgan = require('morgan')
+const cors = require('cors')
 
 app.use(express.json())
+app.use(express.static('build'))
 
 // Morgan middleware
 // Log all requests to console
@@ -18,6 +20,8 @@ morgan.token('number', function (req,res) {
 app.use(morgan(':method :url { :namee , :number }', {
   skip: function (req,res) { return false} 
 }))
+
+app.use(cors())
 
 
 
@@ -128,7 +132,7 @@ app.post('/api/persons', (request, response) => {
 })
 
 // PORT definition
-const PORT = 3001
+const PORT = process.env.PORT || 3001 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
 })
