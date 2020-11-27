@@ -1,7 +1,9 @@
+require('dotenv').config()
 const express = require('express')
 const app = express()
 const morgan = require('morgan')
 const cors = require('cors')
+const Person = require('./models/person')
 
 app.use(express.json())
 app.use(express.static('build'))
@@ -21,36 +23,9 @@ app.use(morgan(':method :url { :namee , :number }', {
   skip: function (req,res) { return false} 
 }))
 
+// END of MORGAN
+
 app.use(cors())
-
-
-
-// Hardcoded list of data
-let persons = [
-
-  {
-    "id": 1,
-    "name": "Arto Hellas",
-    "number": "040-123456"
-    
-  },
-
-  {
-    "id": 2,
-    "name": "Ada Lovelace",
-    "number": "39-44-5323523"
-    
-  },
-
-  { 
-    "id": 3,
-    "name": "Dan Abramov",
-    "number": "12-43-234345"
-
-  }
-
-]
-
 
 // PAGES 
 
@@ -59,7 +34,7 @@ app.get('/', (request, response) => {
   response.send('<h1>Nothing here for now!</h1>') 
 })
 
-// Info page 
+// Info page [TO FIX] No longer works after MongoDB integration (probably)
 app.get('/info', (request, response) => {
   let bookLength = persons.length 
   response.send(`<p>Phonebook has info for ${bookLength} people. </p> <p>${new Date()}</p>`)
@@ -69,19 +44,16 @@ app.get('/info', (request, response) => {
 
 // HTTP GET Request for persons 
 app.get('/api/persons', (request, response) => {
-  response.send(persons)
+  Person.find({}).then(notes => {
+    response.json(notes)
+  })
 })
 
 // HTTP GET Request for a single person's entry in the phonebook
 app.get('/api/persons/:id', (request, response) => {
-  const id = Number(request.params.id)
-  const person = persons.find(person => person.id === id)
-  
-  if(person) {
-    response.json(person)
-  } else {
-    response.status(404).end()
-  }
+    Person.findById(request.params.id).then(note => {
+      response.json(note) 
+    })
 })
 
 // HTTP DELETE Request for a single person's entry in the phonebook 
