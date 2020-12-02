@@ -1,4 +1,5 @@
 const mongoose = require('mongoose')
+const uniqueValidator = require('mongoose-unique-validator')
 
 const url = process.env.MONGODB_URI
 
@@ -14,9 +15,24 @@ mongoose.connect(url, { useNewUrlParser: true, useUnifiedTopology: true, useFind
   })
 
 const personSchema = new mongoose.Schema({
-  name: String,
-  number: String,
+  name: {
+    type: String,
+    required: true,
+    minlength: 3,
+    unique: true
+  },
+  number: {
+    type: String, 
+    validate: {
+      // below regex matches 8 digits together regardless of any other characters in between that are not digits
+      validator: function(v) { return /([^\d]*\d){8,}/.test(v) }
+    },
+    required: true
+  },
 })
+
+// applying the uniqueness validator 
+personSchema.plugin(uniqueValidator)
 
 personSchema.set('toJSON', {
   transform: (document, returnedObject) => {

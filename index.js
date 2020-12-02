@@ -5,23 +5,9 @@ const morgan = require('morgan')
 const cors = require('cors')
 const Person = require('./models/person')
 
-
-app.use(express.json())
 app.use(express.static('build'))
+app.use(express.json())
 app.use(cors())
-
-// Error Handling middleware
-const errorHandler = (error, request, response, next) => {
-  console.error(error.message) 
-
-  if (error.name === 'CastError') {
-    return response.status(400).send({ error: 'malformatted id' })
-  }
-
-  next(error)
-}
-
-app.use(errorHandler)
 
 // Morgan middleware
 // // Log all requests to console
@@ -39,8 +25,6 @@ app.use(errorHandler)
 // }))
 
 // END of MORGAN
-
-
 
 // PAGES 
 
@@ -87,7 +71,7 @@ app.delete('/api/persons/:id', (request, response, next) => {
 })
 
 // HTTP POST Request to add a single person's entry into the phonebook
-app.post('/api/persons', (request, response) => {
+app.post('/api/persons', (request, response, next) => {
   const body = request.body 
 
   if(!body.number) {
@@ -101,26 +85,6 @@ app.post('/api/persons', (request, response) => {
       error: 'number missing'
     })
   }
-
-  // HTTP PUT Request for updating a phonebook entry 
-  app.put('/api/persons/:id', (request, response, next) => {
-    const body = request.body 
-
-    const person = {
-      name: body.name,
-      number: body.number,
-    }
-
-    Person.findById(request.params.id).then(person => {
-      console.log(person)
-    })
-    
-    Person.findByIdAndUpdate(request.params.id, person, {new: true})
-      .then(updatedPerson => {
-        response.json(updatedPerson) 
-      })
-      .catch(error => next(error))
-  })
   
   // Previous condition for not allowing non-unique names 
   // if(persons.filter(person => person.name === body.name).length > 0) {
@@ -134,11 +98,56 @@ app.post('/api/persons', (request, response) => {
     number: body.number,
   })
 
-  person.save().then(savedPerson => {
-    response.json(savedPerson)
+  person
+  .save()
+  .then(savedPerson => savedPerson.toJSON()) 
+  .then(savedAndFormattedPerson => {
+    response.json(savedAndFormattedPerson)    
+  })
+  .catch(error => {
+    next(error)
+    console.log("Passed error to middleware")
   })
 
 })
+
+// HTTP PUT Request for updating a phonebook entry 
+app.put('/api/persons/:id', (request, response, next) => {
+  const body = request.body 
+
+  const person = {
+    name: body.name,
+    number: body.number,
+  }
+
+  Person.findById(request.params.id).then(person => {
+    console.log(person)
+  })
+  
+  Person.findByIdAndUpdate(request.params.id, { name: request.body.name, number: request.body.number}, {new: true, runValidators: true,})
+    .then(updatedPerson => {
+      response.json(updatedPerson) 
+    })
+    .catch(error => next(error))
+})
+
+// Error Handling middleware
+const errorHandler = (error, request, response, next) => {
+  console.log('IN MIDDLEWARE')
+  console.error(error.message)
+
+  if (error.name === 'CastError') {
+    return response.status(400).send({ error: 'malformatted id' })
+
+  } else if (error.name === 'ValidationError') {
+    console.log('Found as VALIDATIONERROR')
+    return response.status(400).json({ error: error.message })
+  }
+
+  next(error)
+}
+
+app.use(errorHandler)
 
 // PORT definition
 const PORT = process.env.PORT || 3001 
