@@ -51,7 +51,7 @@ app.get('/', (request, response) => {
 
 // Info page [TO FIX] No longer works after MongoDB integration (probably)
 app.get('/info', (request, response) => {
-  let bookLength = persons.length 
+  let bookLength = Person.length - 1
   response.send(`<p>Phonebook has info for ${bookLength} people. </p> <p>${new Date()}</p>`)
 })
 
