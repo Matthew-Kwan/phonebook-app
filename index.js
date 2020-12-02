@@ -5,27 +5,42 @@ const morgan = require('morgan')
 const cors = require('cors')
 const Person = require('./models/person')
 
+
 app.use(express.json())
 app.use(express.static('build'))
+app.use(cors())
+
+// Error Handling middleware
+const errorHandler = (error, request, response, next) => {
+  console.error(error.message) 
+
+  if (error.name === 'CastError') {
+    return response.status(400).send({ error: 'malformatted id' })
+  }
+
+  next(error)
+}
+
+app.use(errorHandler)
 
 // Morgan middleware
-// Log all requests to console
+// // Log all requests to console
 
-morgan.token('namee', function (req,res) {
-  return req.body['name']
-})
+// morgan.token('namee', function (req,res) {
+//   return req.body['name']
+// })
 
-morgan.token('number', function (req,res) {
-  return req.body['number']
-})
+// morgan.token('number', function (req,res) {
+//   return req.body['number']
+// })
 
-app.use(morgan(':method :url { :namee , :number }', {
-  skip: function (req,res) { return false} 
-}))
+// app.use(morgan(':method :url { :namee , :number }', {
+//   skip: function (req,res) { return false} 
+// }))
 
 // END of MORGAN
 
-app.use(cors())
+
 
 // PAGES 
 
@@ -44,30 +59,32 @@ app.get('/info', (request, response) => {
 
 // HTTP GET Request for persons 
 app.get('/api/persons', (request, response) => {
-  Person.find({}).then(notes => {
-    response.json(notes)
+  Person.find({}).then(phones => {
+    console.log(phones)
+    response.json(phones)
   })
 })
 
 // HTTP GET Request for a single person's entry in the phonebook
-app.get('/api/persons/:id', (request, response) => {
-    Person.findById(request.params.id).then(note => {
-      response.json(note) 
+app.get('/api/persons/:id', (request, response, next ) => {
+    Person.findById(request.params.id).then(person => {
+      if (person) {
+        response.json(person) 
+      } else {
+        response.status(404).end()
+      }
     })
+    .catch(error => next(error))
 })
 
 // HTTP DELETE Request for a single person's entry in the phonebook 
-app.delete('/api/persons/:id', (request, response) => {
-  const id = Number(request.params.id) 
-  persons = persons.filter(person => person.id !== id)
-
-  response.status(204).end()
+app.delete('/api/persons/:id', (request, response, next) => {
+  Person.findByIdAndRemove(request.params.id) 
+    .then(result => {
+      response.status(204).end()
+    })
+    .catch(error => next(error))
 })
-
-// Function to generate random ID
-const getId = () => {
-  return Math.floor(Math.random()*1000)
-}
 
 // HTTP POST Request to add a single person's entry into the phonebook
 app.post('/api/persons', (request, response) => {
@@ -85,21 +102,41 @@ app.post('/api/persons', (request, response) => {
     })
   }
 
-  if(persons.filter(person => person.name === body.name).length > 0) {
-    return response.status(400).json({
-      error: 'name must be unique'
-    })
-  }
+  // HTTP PUT Request for updating a phonebook entry 
+  app.put('/api/persons/:id', (request, response, next) => {
+    const body = request.body 
 
-  const person = {
+    const person = {
+      name: body.name,
+      number: body.number,
+    }
+
+    Person.findById(request.params.id).then(person => {
+      console.log(person)
+    })
+    
+    Person.findByIdAndUpdate(request.params.id, person, {new: true})
+      .then(updatedPerson => {
+        response.json(updatedPerson) 
+      })
+      .catch(error => next(error))
+  })
+  
+  // Previous condition for not allowing non-unique names 
+  // if(persons.filter(person => person.name === body.name).length > 0) {
+  //   return response.status(400).json({
+  //     error: 'name must be unique'
+  //   })
+  // }
+
+  const person = new Person({
     name: body.name,
     number: body.number,
-    id: getId()
-  }
+  })
 
-  persons = persons.concat(person) 
-
-  response.json(person)
+  person.save().then(savedPerson => {
+    response.json(savedPerson)
+  })
 
 })
 

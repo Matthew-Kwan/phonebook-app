@@ -1,3 +1,4 @@
+// MONGOOSE AND MONGODB playground
 const mongoose = require('mongoose')
 
 if (process.argv.length < 3) {
