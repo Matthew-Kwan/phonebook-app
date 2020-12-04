@@ -9,5 +9,6 @@ Link to application: https://gentle-falls-51375.herokuapp.com/
 * Add a phonebook entry consisting of a name and numbers 
 * Delete phonebook entries 
 * Update existing entries (type in the same name to update) 
+* Use the whitebar at the top to filter entries dynamically
 * Event messaging for errors and successes 
 * Custom validators on names and numbers
